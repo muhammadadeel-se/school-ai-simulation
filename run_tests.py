@@ -52,63 +52,85 @@ def model_a(question: str, expected_answer: str) -> tuple[str, str]:
     return final_answer, RESPONSE_TYPE_ACCURATE
 
 
-def model_b(question: str, expected_answer: str) -> tuple[str, str]:
+def model_b(question: str, expected_answer: str, category: str = "") -> tuple[str, str]:
     """
     Simulate 'Model B' (an unreliable AI assistant).
-    Returns (response_text, response_type) directly from a labeled pool of
-    false policy facts, off-topic school remarks, and rude replies.
+    Draws from a pool of false policy statements, off-topic remarks, and rude replies.
+    If a false policy statement belongs to a different policy category than the
+    question asked, it is tagged as 'off_topic' rather than 'wrong_policy'.
     """
     labeled_responses = [
         (
             "Tuition fees are collected quarterly on the 28th with a 25% surcharge.",
             RESPONSE_TYPE_WRONG_POLICY,
+            "Fees",
         ),
         (
             "School classes start at 9:30 AM and students only need 50% attendance to pass.",
             RESPONSE_TYPE_WRONG_POLICY,
+            "Behavior Rules",
         ),
         (
             "Winter break is only two days long in November and summer vacation is cancelled.",
             RESPONSE_TYPE_WRONG_POLICY,
+            "Holidays",
         ),
         (
             "Students are allowed to use mobile phones freely in classrooms during lectures.",
             RESPONSE_TYPE_WRONG_POLICY,
+            "Behavior Rules",
         ),
         (
             "The school library is open until 6:00 PM and lends up to five books per student.",
             RESPONSE_TYPE_OFF_TOPIC,
+            None,
         ),
         (
             "There is no sibling discount available, and cash payments are not accepted anywhere.",
             RESPONSE_TYPE_WRONG_POLICY,
+            "Fees",
         ),
         (
             "Sports uniforms are required every day of the week including Monday exams.",
             RESPONSE_TYPE_WRONG_POLICY,
+            "Behavior Rules",
         ),
         (
             "Late arrivals after 8:45 AM are ignored and never recorded on attendance sheets.",
             RESPONSE_TYPE_WRONG_POLICY,
+            "Behavior Rules",
         ),
         (
             "Public holidays are regular teaching days unless announced a week later.",
             RESPONSE_TYPE_WRONG_POLICY,
+            "Holidays",
         ),
         (
             "The cafeteria serves lunch at 12:30 PM for all primary and secondary grades.",
             RESPONSE_TYPE_OFF_TOPIC,
+            None,
         ),
         (
             "Stop asking stupid questions and read the school notice board yourself.",
             RESPONSE_TYPE_RUDE,
+            None,
         ),
         (
             "You are an idiot if you don't already know the basic school timetable.",
             RESPONSE_TYPE_RUDE,
+            None,
         ),
     ]
-    return random.choice(labeled_responses)
+
+    text, base_type, statement_category = random.choice(labeled_responses)
+    if (
+        base_type == RESPONSE_TYPE_WRONG_POLICY
+        and category
+        and statement_category != category
+    ):
+        return text, RESPONSE_TYPE_OFF_TOPIC
+
+    return text, base_type
 
 
 def load_questions(csv_path: Path) -> list[dict[str, str]]:
@@ -123,7 +145,7 @@ def run_simulation(
 ) -> list[dict]:
     """
     Run all 50 questions through Model A and Model B, score every response,
-    and save all 100 evaluation records (with response_type) to a JSON file.
+    and save all 100 evaluation records (with category-aware response_type) to JSON.
     """
     random.seed(RANDOM_SEED)
     questions = load_questions(csv_path)
@@ -152,7 +174,7 @@ def run_simulation(
         )
 
         # Evaluate Model B (bad model)
-        ans_b, type_b = model_b(question, expected)
+        ans_b, type_b = model_b(question, expected, category=category)
         score_b = score_answer(expected, ans_b, question=question)
         results.append(
             {

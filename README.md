@@ -5,16 +5,18 @@ A local Python simulation runner (`run_tests.py`) that evaluates two simulated A
 ## How It Works
 
 1. **`model_a(question, expected_answer)`:** Simulates a strong school assistant by wrapping the ground-truth answer in natural conversational openers/closers and minor synonymous phrasing while preserving key numbers, dates, percentages, and times. Returns `(response_text, "accurate_paraphrase")`.
-2. **`model_b(question, expected_answer)`:** Simulates a flawed assistant by drawing from a labeled pool of wrong policy figures, off-topic school statements, and rude responses. Returns `(response_text, response_type)` directly without post-hoc inference.
+2. **`model_b(question, expected_answer, category)`:** Simulates a flawed assistant by drawing from a pool of false policy statements, general off-topic remarks, and rude replies. If a false policy statement belongs to a different policy category than the question asked (e.g., a Behavior Rules statement drawn for a Fees question), it is automatically tagged as `"off_topic"` rather than `"wrong_policy"`.
 3. **`run_simulation()`:** Iterates through all 50 questions, scores both models' outputs on a `0–100` scale via `score_answer()`, and exports all **100 records** to `simulation_results.json`.
 
 ## Canonical `response_type` Values
 
 Every record in `simulation_results.json` carries one of four fixed `response_type` tags:
 * `accurate_paraphrase` — Ground-truth policy answer with polite framing/paraphrasing (`Model A`)
-* `wrong_policy` — Incorrect dates, fees, percentages, or school rules (`Model B`)
-* `off_topic` — Unrelated school information that does not answer the question (`Model B`)
+* `wrong_policy` — Incorrect dates, fees, percentages, or rules within the same policy category as the question (`Model B`)
+* `off_topic` — Either a general unrelated remark or a statement from a different policy category that does not address the question (`Model B`)
 * `rude` — Hostile or unprofessional phrasing caught by the rude-word guardrail (`Model B`)
+
+> **Simulation Note:** `model_b` draws uniformly from a 12-item response pool rather than generating dynamic text per question, so some statements repeat across the 50 draws and cross-category draws naturally increase the `off_topic` share.
 
 ## Project Files
 
