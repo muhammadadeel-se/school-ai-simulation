@@ -42,3 +42,4 @@ Each of the 100 entries in `simulation_results.json` follows this unified schema
   "model_answer": "Certainly! Monthly tuition fees must be paid by the 10th of each month.",
   "score": 88
 }
+> **Report Caveat:** Because `model_b` draws from a fixed 12-item pool, Q5 and Q48 repeat the exact same `wrong_policy` sentence, and all 12 `rude` entries receive `0` strictly from the rude-word check rather than content scoring (which alone scores 6–16).
