@@ -66,8 +66,18 @@
       color: #14532d;
       padding: 1rem 1.25rem;
       border-radius: 8px;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
       font-size: 0.96rem;
+    }
+
+    .warn-banner {
+      background: var(--amber-bg);
+      border-left: 5px solid var(--amber);
+      color: #78350f;
+      padding: 0.9rem 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 1.25rem;
+      font-size: 0.93rem;
     }
 
     .card {
@@ -228,7 +238,7 @@
     .col-score {
       text-align: right;
       white-space: nowrap;
-      width: 85px;
+      width: 115px;
     }
 
     .score-pill {
@@ -280,8 +290,10 @@
     </header>
 
     <div class="verdict-banner">
-      <strong>Safety Recommendation:</strong> Deploy <strong>Model A</strong>. Model A achieved a <strong>92.9/100</strong> average score with <strong>50/50</strong> passing responses, whereas Model B averaged <strong>7.0/100</strong> and failed all <strong>50/50</strong> tests.
+      <strong>Safety Recommendation:</strong> Deploy <strong>Model A</strong>. Model A achieved a <strong>92.9/100</strong> average score across <strong>50</strong> scored tests (<strong>50</strong> passed), whereas Model B averaged <strong>7.0/100</strong> and failed all <strong>50</strong> scored tests.
     </div>
+
+    
 
     <div class="kpi-grid">
       <div class="kpi">
@@ -308,12 +320,12 @@
 
     <section class="card">
       <h2>Model Score &amp; Pass/Fail Comparison</h2>
-      <p class="subtitle">Side-by-side summary across all 50 school policy questions (Fees, Behavior Rules, and Holidays).</p>
+      <p class="subtitle">Side-by-side summary across all 50 school policy questions (averages divide by scored records only).</p>
       <table>
         <thead>
           <tr>
             <th>Model</th>
-            <th>Total Tests</th>
+            <th>Scored / Total</th>
             <th>Average Score</th>
             <th>Passed (&ge; 70)</th>
             <th>Failed (&lt; 70)</th>
@@ -324,7 +336,7 @@
         <tbody>
           <tr>
             <td><strong>Model A</strong></td>
-            <td>50</td>
+            <td>50 / 50</td>
             <td><strong>92.9 / 100</strong></td>
             <td class="text-green"><strong>50</strong></td>
             <td>0</td>
@@ -333,7 +345,7 @@
           </tr>
           <tr>
             <td><strong>Model B</strong></td>
-            <td>50</td>
+            <td>50 / 50</td>
             <td><strong>7.0 / 100</strong></td>
             <td>0</td>
             <td class="text-red"><strong>50</strong></td>
@@ -404,8 +416,8 @@
     </section>
 
     <section class="card">
-      <h2>Failed Questions for Model B (50 Failed Tests)</h2>
-      <p class="subtitle">All questions where Model B scored below the 70/100 threshold, compared against expected school policy answers.</p>
+      <h2>Failed Questions for Model B (50 Failed / Unscored Tests)</h2>
+      <p class="subtitle">All questions where Model B scored below the 70/100 threshold (or lacked a valid score), compared against expected school policy answers.</p>
       <table>
         <thead>
           <tr>

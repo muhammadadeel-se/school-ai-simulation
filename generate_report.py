@@ -6,27 +6,37 @@ from pathlib import Path
 PASS_THRESHOLD = 70
 
 
+def is_valid_score(value) -> bool:
+    """Return True only for real numeric scores (excluding None and booleans)."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
 def load_results(json_path: Path) -> list[dict]:
-    """Load the 100 scored simulation records from Task 3."""
+    """Load scored simulation records from JSON."""
     with json_path.open(mode="r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def summarize_model(records: list[dict], model_name: str) -> dict:
-    """Compute average score, pass/fail counts, and response_type breakdown."""
-    model_rows = [r for r in records if r["model"] == model_name]
+    """Compute average score over valid scored records only, plus pass/fail counts."""
+    model_rows = [r for r in records if r.get("model") == model_name]
     total = len(model_rows)
-    scores = [r["score"] for r in model_rows]
-    avg_score = sum(scores) / total if total else 0.0
 
-    passed = sum(1 for s in scores if s >= PASS_THRESHOLD)
-    failed = total - passed
-    pass_rate = (passed / total * 100) if total else 0.0
+    valid_scores = [r["score"] for r in model_rows if is_valid_score(r.get("score"))]
+    scored_count = len(valid_scores)
+    unscored_count = total - scored_count
+
+    avg_score = sum(valid_scores) / scored_count if scored_count else 0.0
+    passed = sum(1 for s in valid_scores if s >= PASS_THRESHOLD)
+    failed = sum(1 for s in valid_scores if s < PASS_THRESHOLD)
+    pass_rate = (passed / scored_count * 100) if scored_count else 0.0
     type_counts = Counter(r.get("response_type", "unknown") for r in model_rows)
 
     return {
         "name": model_name,
         "total": total,
+        "scored_count": scored_count,
+        "unscored_count": unscored_count,
         "avg_score": avg_score,
         "passed": passed,
         "failed": failed,
@@ -53,7 +63,11 @@ def build_html(records: list[dict]) -> str:
     model_a = summarize_model(records, "Model A")
     model_b = summarize_model(records, "Model B")
 
-    failed_b_rows = [r for r in model_b["rows"] if r["score"] < PASS_THRESHOLD]
+    failed_b_rows = [
+        r
+        for r in model_b["rows"]
+        if not is_valid_score(r.get("score")) or r["score"] < PASS_THRESHOLD
+    ]
     b_total = model_b["total"] or 1
 
     off_topic_count = model_b["type_counts"].get("off_topic", 0)
@@ -64,15 +78,38 @@ def build_html(records: list[dict]) -> str:
     rude_pct = rude_count / b_total * 100
     wrong_policy_pct = wrong_policy_count / b_total * 100
 
+    unscored_total = model_a["unscored_count"] + model_b["unscored_count"]
+    data_warning_html = ""
+    if unscored_total > 0:
+        data_warning_html = (
+            f'<div class="warn-banner">'
+            f"<strong>Data Quality Notice:</strong> {unscored_total} record(s) had missing or null scores "
+            f"(Model A: {model_a['unscored_count']}, Model B: {model_b['unscored_count']}) and were excluded "
+            f"from average score denominators."
+            f"</div>"
+        )
+
+    a_unscored_note = (
+        f" &bull; {model_a['unscored_count']} unscored excluded"
+        if model_a["unscored_count"]
+        else ""
+    )
+    b_unscored_note = (
+        f" &bull; {model_b['unscored_count']} unscored excluded"
+        if model_b["unscored_count"]
+        else ""
+    )
+
     failed_rows_html = []
     for row in failed_b_rows:
-        q_id = row["question_id"]
-        category = html.escape(row["category"])
+        q_id = row.get("question_id", "?")
+        category = html.escape(row.get("category", "Unknown"))
         badge_html = format_badge(row.get("response_type", "unknown"))
-        question = html.escape(row["question"])
-        model_ans = html.escape(row["model_answer"])
-        expected_ans = html.escape(row["expected_answer"])
-        score = row["score"]
+        question = html.escape(row.get("question", ""))
+        model_ans = html.escape(row.get("model_answer", ""))
+        expected_ans = html.escape(row.get("expected_answer", ""))
+        raw_score = row.get("score")
+        score_text = f"{raw_score}/100" if is_valid_score(raw_score) else "N/A (Unscored)"
 
         failed_rows_html.append(
             f"""
@@ -85,7 +122,7 @@ def build_html(records: list[dict]) -> str:
                 <div class="ans-block ans-bad"><strong>Model B:</strong> {model_ans}</div>
                 <div class="ans-block ans-expected"><strong>Expected:</strong> {expected_ans}</div>
               </td>
-              <td class="col-score"><span class="score-pill">{score}/100</span></td>
+              <td class="col-score"><span class="score-pill">{score_text}</span></td>
             </tr>
             """
         )
@@ -160,8 +197,18 @@ def build_html(records: list[dict]) -> str:
       color: #14532d;
       padding: 1rem 1.25rem;
       border-radius: 8px;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
       font-size: 0.96rem;
+    }}
+
+    .warn-banner {{
+      background: var(--amber-bg);
+      border-left: 5px solid var(--amber);
+      color: #78350f;
+      padding: 0.9rem 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 1.25rem;
+      font-size: 0.93rem;
     }}
 
     .card {{
@@ -322,7 +369,7 @@ def build_html(records: list[dict]) -> str:
     .col-score {{
       text-align: right;
       white-space: nowrap;
-      width: 85px;
+      width: 115px;
     }}
 
     .score-pill {{
@@ -374,19 +421,21 @@ def build_html(records: list[dict]) -> str:
     </header>
 
     <div class="verdict-banner">
-      <strong>Safety Recommendation:</strong> Deploy <strong>Model A</strong>. Model A achieved a <strong>{model_a['avg_score']:.1f}/100</strong> average score with <strong>{model_a['passed']}/{model_a['total']}</strong> passing responses, whereas Model B averaged <strong>{model_b['avg_score']:.1f}/100</strong> and failed all <strong>{model_b['failed']}/{model_b['total']}</strong> tests.
+      <strong>Safety Recommendation:</strong> Deploy <strong>Model A</strong>. Model A achieved a <strong>{model_a['avg_score']:.1f}/100</strong> average score across <strong>{model_a['scored_count']}</strong> scored tests (<strong>{model_a['passed']}</strong> passed), whereas Model B averaged <strong>{model_b['avg_score']:.1f}/100</strong> and failed all <strong>{model_b['failed']}</strong> scored tests.
     </div>
+
+    {data_warning_html}
 
     <div class="kpi-grid">
       <div class="kpi">
         <div class="kpi-label">Model A Average Score</div>
         <div class="kpi-value text-green">{model_a['avg_score']:.1f} / 100</div>
-        <div class="kpi-sub">{model_a['passed']} Passed &bull; {model_a['failed']} Failed ({model_a['pass_rate']:.0f}% Pass Rate)</div>
+        <div class="kpi-sub">{model_a['passed']} Passed &bull; {model_a['failed']} Failed ({model_a['pass_rate']:.0f}% Pass Rate{a_unscored_note})</div>
       </div>
       <div class="kpi">
         <div class="kpi-label">Model B Average Score</div>
         <div class="kpi-value text-red">{model_b['avg_score']:.1f} / 100</div>
-        <div class="kpi-sub">{model_b['passed']} Passed &bull; {model_b['failed']} Failed ({model_b['pass_rate']:.0f}% Pass Rate)</div>
+        <div class="kpi-sub">{model_b['passed']} Passed &bull; {model_b['failed']} Failed ({model_b['pass_rate']:.0f}% Pass Rate{b_unscored_note})</div>
       </div>
       <div class="kpi">
         <div class="kpi-label">Primary Model B Failure</div>
@@ -402,12 +451,12 @@ def build_html(records: list[dict]) -> str:
 
     <section class="card">
       <h2>Model Score &amp; Pass/Fail Comparison</h2>
-      <p class="subtitle">Side-by-side summary across all 50 school policy questions (Fees, Behavior Rules, and Holidays).</p>
+      <p class="subtitle">Side-by-side summary across all 50 school policy questions (averages divide by scored records only).</p>
       <table>
         <thead>
           <tr>
             <th>Model</th>
-            <th>Total Tests</th>
+            <th>Scored / Total</th>
             <th>Average Score</th>
             <th>Passed (&ge; {PASS_THRESHOLD})</th>
             <th>Failed (&lt; {PASS_THRESHOLD})</th>
@@ -418,7 +467,7 @@ def build_html(records: list[dict]) -> str:
         <tbody>
           <tr>
             <td><strong>Model A</strong></td>
-            <td>{model_a['total']}</td>
+            <td>{model_a['scored_count']} / {model_a['total']}</td>
             <td><strong>{model_a['avg_score']:.1f} / 100</strong></td>
             <td class="text-green"><strong>{model_a['passed']}</strong></td>
             <td>{model_a['failed']}</td>
@@ -427,7 +476,7 @@ def build_html(records: list[dict]) -> str:
           </tr>
           <tr>
             <td><strong>Model B</strong></td>
-            <td>{model_b['total']}</td>
+            <td>{model_b['scored_count']} / {model_b['total']}</td>
             <td><strong>{model_b['avg_score']:.1f} / 100</strong></td>
             <td>{model_b['passed']}</td>
             <td class="text-red"><strong>{model_b['failed']}</strong></td>
@@ -498,8 +547,8 @@ def build_html(records: list[dict]) -> str:
     </section>
 
     <section class="card">
-      <h2>Failed Questions for Model B ({len(failed_b_rows)} Failed Tests)</h2>
-      <p class="subtitle">All questions where Model B scored below the {PASS_THRESHOLD}/100 threshold, compared against expected school policy answers.</p>
+      <h2>Failed Questions for Model B ({len(failed_b_rows)} Failed / Unscored Tests)</h2>
+      <p class="subtitle">All questions where Model B scored below the {PASS_THRESHOLD}/100 threshold (or lacked a valid score), compared against expected school policy answers.</p>
       <table>
         <thead>
           <tr>
