@@ -1,32 +1,60 @@
-# School AI Response Simulation & Comparison Report
+# School AI Policy Assistant — Evaluation & Comparison Report
 
-A local Python evaluation pipeline that simulates two AI models (**Model A** and **Model B**) across **50 school policy questions** (`run_tests.py` + `scorer.py`), saves **100 scored records** to `simulation_results.json`, and generates a static HTML/CSS comparison webpage (`report.html` via `generate_report.py`).
+**Live Comparison Report:** [https://muhammadadeel-se.github.io/school-ai-simulation/](https://muhammadadeel-se.github.io/school-ai-simulation/)  
+*(Direct file link: [report.html](https://muhammadadeel-se.github.io/school-ai-simulation/report.html))*
 
-## Key Evaluation Results
+---
 
-* **Pass Threshold:** `Score >= 70 / 100`
-* **Model A (Recommended):** **92.9 / 100** average score — **50 passed**, **0 failed** (`100%` pass rate).
-* **Model B (Unsafe):** **7.0 / 100** average score — **0 passed**, **50 failed** (`0%` pass rate).
-* **Model B Failure Breakdown (via `response_type` tags):**
-  * `off_topic`: **31 / 50 (62%)** — Headline failure mode (unrelated remarks or answers from a different policy category).
-  * `rude`: **12 / 50 (24%)** — Hostile replies caught immediately (`0/100`) by the rude-word guardrail in `scorer.py`.
-  * `wrong_policy`: **7 / 50 (14%)** — Direct false policy rules within the asked category.
+## 1. Project Goal
 
-> **Report Caveat:** Because `model_b` draws from a fixed 12-item pool, Q5 and Q48 repeat the exact same `wrong_policy` sentence, and all 12 `rude` entries receive `0` strictly from the rude-word check rather than content scoring (which alone scores 6–16).
+Before introducing an AI assistant to answer questions from students and parents, the school needs to verify that the AI gives **accurate, on-topic, and polite** information about school policies.
 
-## Project Files
+This project tests two candidate AI models—**Model A** and **Model B**—against **50 real-world school policy questions** covering three everyday topics:
+* **Fees** (monthly due dates, sibling discounts, payment rules)
+* **Behavior Rules** (mobile phones, late arrivals, sports uniforms)
+* **Holidays** (winter break, summer vacation, public holidays)
 
-| File | Purpose |
-| :--- | :--- |
-| `school_question_bank.csv` | Synthetic 50-question school policy evaluation dataset |
-| `scorer.py` | Local scoring engine (`0–100` scale with keyword coverage, string similarity, and rude-word filter) |
-| `run_tests.py` | Runs the 50-question simulation for Model A and Model B and writes `simulation_results.json` |
-| `simulation_results.json` | Generated output containing 100 scored test entries |
-| `generate_report.py` | Reads `simulation_results.json` and builds the static `report.html` webpage |
-| `report.html` | Self-contained, CSS-styled static comparison webpage (`AI Model Comparison`) |
+Each model's answers are automatically scored from **0 to 100**, saved to `simulation_results.json`, and published as an easy-to-read static webpage (`report.html`).
 
-## How to Run
+---
 
-1. Run the simulation (optional—`simulation_results.json` is already generated):
+## 2. How to Interpret the Report Scores (For School Staff)
+
+You do not need any technical background to read the comparison report. Every answer is graded on a **0 to 100 scale**, with **70/100 set as the minimum passing score**:
+
+| Score Range | Result | What It Means for the School |
+| :--- | :--- | :--- |
+| **70 – 100** | **Pass (Safe)** | The AI answered the right policy question accurately and politely. Safe for students and parents. |
+| **1 – 69** | **Fail (Unsafe)** | The AI drifted off-topic, answered a different policy rule, or gave incorrect school information. |
+| **0** | **Blocked (Rude)** | The AI used insulting language (such as *"stupid"* or *"idiot"*) and was immediately blocked by the safety filter. |
+
+### Final Evaluation Verdict
+
+| Metric | Model A (Recommended) | Model B (Do Not Deploy) |
+| :--- | :--- | :--- |
+| **Average Score** | **92.9 / 100** | **7.0 / 100** |
+| **Passed Tests (`>= 70`)** | **50 / 50 (100%)** | **0 / 50 (0%)** |
+| **Failed Tests (`< 70`)** | **0 / 50 (0%)** | **50 / 50 (100%)** |
+| **Recommendation** | **Safe for school use** | **Unsafe — reject** |
+
+### What Model B's Failure Labels Mean
+In the report's **Failed Questions** table, each Model B failure is tagged with why it failed:
+* **Off-Topic Drift (`off_topic` — 31 of 50 responses, 62%):** Model B's main failure mode. Instead of answering the question asked, it gave an unrelated remark or quoted a rule from a different topic (for example, talking about mobile phones when asked about tuition fees).
+* **Rude / Guardrail 0 (`rude` — 12 of 50 responses, 24%):** Model B insulted the user and received `0/100` immediately from the rude-word check.
+* **Wrong Policy (`wrong_policy` — 7 of 50 responses, 14%):** Model B stayed on the right topic but stated the opposite of actual school policy (for example, claiming students can use mobile phones freely during lectures).
+
+### Transparency & Methodological Notes
+* **Repeated Simulation Example:** Because `Model B` draws from a fixed 12-item test pool, **Q5** and **Q48** repeat the exact same `wrong_policy` sentence.
+* **Rude-Word Guardrail Dependency:** All 12 `rude` entries received `0` strictly from the rude-word filter rather than content scoring (which alone scores 6–16 due to minor common-word overlap).
+* **Missing or Null Scores:** If any test record has a missing or `null` score, `generate_report.py` excludes it from average score calculations (so averages are never distorted) and conservatively lists it as a failure in Model B's table so unverified answers are never treated as safe.
+
+---
+
+## 3. How to Run the Python Scripts Locally
+
+No third-party packages or internet connection are required—everything runs using **Python 3** standard libraries only.
+
+1. **Clone the repository and open the folder:**
    ```bash
-   python run_tests.py
+   git clone [https://github.com/muhammadadeel-se/school-ai-simulation.git](https://github.com/muhammadadeel-se/school-ai-simulation.git)
+   cd school-ai-simulation
