@@ -85,7 +85,7 @@ def build_html(records: list[dict]) -> str:
             f'<div class="warn-banner">'
             f"<strong>Data Quality Notice:</strong> {unscored_total} record(s) had missing or null scores "
             f"(Model A: {model_a['unscored_count']}, Model B: {model_b['unscored_count']}) and were excluded "
-            f"from average score denominators."
+            f"from average score denominators; any unscored Model B records are conservatively listed as failures so unverified outputs are not treated as safe."
             f"</div>"
         )
 
@@ -542,7 +542,7 @@ def build_html(records: list[dict]) -> str:
       </div>
 
       <div class="caveat-box">
-        <strong>Methodology Notes:</strong> Model B&rsquo;s dominant failure mode is drifting off-topic (31 of 50 responses), including cross-category policy replies. All 12 <code>rude</code> responses received <code>0/100</code> directly from the rude-word guardrail in <code>scorer.py</code> rather than content scoring (which alone scores 6&ndash;16). Because Model B samples from a fixed 12-item pool, Q5 and Q48 repeat the same <code>wrong_policy</code> sentence.
+        <strong>Methodology Notes:</strong> Model B&rsquo;s dominant failure mode is drifting off-topic (31 of 50 responses), including cross-category policy replies. All 12 <code>rude</code> responses received <code>0/100</code> directly from the rude-word guardrail in <code>scorer.py</code> rather than content scoring (which alone scores 6&ndash;16). Because Model B samples from a fixed 12-item pool, Q5 and Q48 repeat the same <code>wrong_policy</code> sentence. Any missing or null scores are excluded from averages and conservatively treated as failures in Model B&rsquo;s table.
       </div>
     </section>
 
