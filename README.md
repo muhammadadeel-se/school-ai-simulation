@@ -1,7 +1,6 @@
 # School AI Policy Assistant — Evaluation & Comparison Report
 
-**Live Comparison Report:** [https://muhammadadeel-se.github.io/school-ai-simulation/](https://muhammadadeel-se.github.io/school-ai-simulation/)  
-*(Direct file link: [report.html](https://muhammadadeel-se.github.io/school-ai-simulation/report.html))*
+Live report: https://muhammadadeel-se.github.io/school-ai-simulation/
 
 ---
 
@@ -9,7 +8,7 @@
 
 Before introducing an AI assistant to answer questions from students and parents, the school needs to verify that the AI gives **accurate, on-topic, and polite** information about school policies.
 
-This project tests two candidate AI models—**Model A** and **Model B**—against **50 real-world school policy questions** covering three everyday topics:
+This project evaluates two candidate AI models—**Model A** and **Model B**—against **50 real-world school policy questions** covering three everyday topics:
 * **Fees** (monthly due dates, sibling discounts, payment rules)
 * **Behavior Rules** (mobile phones, late arrivals, sports uniforms)
 * **Holidays** (winter break, summer vacation, public holidays)
@@ -33,8 +32,8 @@ You do not need any technical background to read the comparison report. Every an
 | Metric | Model A (Recommended) | Model B (Do Not Deploy) |
 | :--- | :--- | :--- |
 | **Average Score** | **92.9 / 100** | **7.0 / 100** |
-| **Passed Tests (`>= 70`)** | **50 / 50 (100%)** | **0 / 50 (0%)** |
-| **Failed Tests (`< 70`)** | **0 / 50 (0%)** | **50 / 50 (100%)** |
+| **Passed Questions (`>= 70`)** | **50 / 50 (100%)** | **0 / 50 (0%)** |
+| **Failed Questions (`< 70`)** | **0 / 50 (0%)** | **50 / 50 (100%)** |
 | **Recommendation** | **Safe for school use** | **Unsafe — reject** |
 
 ### What Model B's Failure Labels Mean
@@ -44,15 +43,17 @@ In the report's **Failed Questions** table, each Model B failure is tagged with 
 * **Wrong Policy (`wrong_policy` — 7 of 50 responses, 14%):** Model B stayed on the right topic but stated the opposite of actual school policy (for example, claiming students can use mobile phones freely during lectures).
 
 ### Transparency & Methodological Notes
-* **Repeated Simulation Example:** Because `Model B` draws from a fixed 12-item test pool, **Q5** and **Q48** repeat the exact same `wrong_policy` sentence.
+* **Repeated Simulation Example:** Because `Model B` draws from a fixed 12-item simulation pool, **Q5** and **Q48** repeat the exact same `wrong_policy` sentence.
 * **Rude-Word Guardrail Dependency:** All 12 `rude` entries received `0` strictly from the rude-word filter rather than content scoring (which alone scores 6–16 due to minor common-word overlap).
-* **Missing or Null Scores:** If any test record has a missing or `null` score, `generate_report.py` excludes it from average score calculations (so averages are never distorted) and conservatively lists it as a failure in Model B's table so unverified answers are never treated as safe.
+* **Missing or Null Scores:** If any record has a missing or `null` score, `generate_report.py` excludes it from average score calculations (so averages are never distorted) and conservatively lists it as a failure in Model B's table so unverified answers are never treated as safe.
 
 ---
 
-## 3. How to Run the Python Scripts Locally
+## 3. How to Run the Simulation & Report Scripts Locally
 
 No third-party packages or internet connection are required—everything runs using **Python 3** standard libraries only.
+
+> **Note on `scorer.py`:** You do **not** need to run or edit `scorer.py` on its own. It holds the 0–100 grading logic and rude-word filter, and `run_tests.py` calls it automatically behind the scenes.
 
 1. **Clone the repository and open the folder:**
    ```bash
