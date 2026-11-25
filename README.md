@@ -43,7 +43,7 @@ In the report's **Failed Questions** table, each Model B failure is tagged with 
 * **Wrong Policy (`wrong_policy` — 7 of 50 responses, 14%):** Model B stayed on the right topic but stated the opposite of actual school policy (for example, claiming students can use mobile phones freely during lectures).
 
 ### Transparency & Methodological Notes
-* **Repeated Simulation Example:** Because `Model B` draws from a fixed 12-item simulation pool, **Q5** and **Q48** repeat the exact same `wrong_policy` sentence.
+* **12 Distinct Model B Responses Across 50 Questions (Why the `7.0` Score Holds):** Model B draws from **12 distinct canned failure templates** (covering `off_topic`, `rude`, and `wrong_policy` behaviours) across all **50 distinct school policy questions**, so individual phrasing repeats across runs (for example, **Q5** and **Q48** share the same `wrong_policy` sentence). The **`7.0 / 100`** average still holds and is **not inflated**: all 50 questions are scored independently against *each question's own* expected keywords via `scorer.py`, none of the 12 templates answers any policy question accurately (`0/50` pass `>= 70`), and the `7.0` average reflects only incidental overlap on common words (such as *"school"* or *"students"*) in non-rude responses.
 * **Rude-Word Guardrail Dependency:** All 12 `rude` entries received `0` strictly from the rude-word filter rather than content scoring (which alone scores 6–16 due to minor common-word overlap).
 * **Missing or Null Scores:** If any record has a missing or `null` score, `generate_report.py` excludes it from average score calculations (so averages are never distorted) and conservatively lists it as a failure in Model B's table so unverified answers are never treated as safe.
 
